@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -19,17 +20,6 @@ Dimensions:
 - service_performance: 464,060 x 24
 """
 
-"""
-ASK THEO:
-
-Merge two DataFrames
-
-load = pd.merge(load_level, service_performance, on='LOAD_ID', how='outer')
-print(load.shape)
-
-Dimensions:
-- load: 464,160 x 85
-"""
 
 # Assess Freeze/Refrigerate/Dry with `TEMPERATURE_REQ`
 print(load_level['TEMPERATURE_REQ'].nunique())
@@ -67,7 +57,6 @@ load_level_time = load_level_time[~load_level_time['ON_TIME_DROP'].isin(timeline
 carrier_timeliness = pd.crosstab(
     load_level_time['ON_TIME_PICK'],
     load_level_time['ON_TIME_DROP'],
-    margins=True,
     normalize='all'
 )
 
@@ -80,8 +69,8 @@ plt.suptitle('Loads tend to be equally delayed in pick-up and drop-off, with 89%
              y=0.98)
 plt.xlabel('On-Time Pick-Up')
 plt.ylabel('On-Time Drop-Off')
-ax.set_xticklabels(['No', 'Yes', 'All'])
-ax.set_yticklabels(['No', 'Yes', 'All'])
+ax.set_xticklabels(['No', 'Yes'])
+ax.set_yticklabels(['No', 'Yes'])
 ax.tick_params(axis='y', rotation=360)
 #plt.show()
 plt.close()
@@ -137,13 +126,13 @@ plt.axvline(Q1, color='gold', linestyle='--')
 plt.axvline(Q2, color='gold', linestyle='--')
 plt.axvline(Q3, color='gold', linestyle='--')
 plt.title('Histogram of Number of Loads One Carrier Delivered')
-plt.suptitle('The histogram of loads delivered by carriers is skewed to the right, with few carriers taking many loads.',
+plt.suptitle('The histogram of loads delivered by carriers is skewed to the right,\nwith few carriers taking many loads.',
              y=0.98)
 plt.xlabel("Number of Loads Delivered")
 plt.ylabel("Frequency")
-plt.figtext(0.5, 0.005, 'The range is (1, 10,000). There are select carriers with more loads.',
-            ha='center', fontsize=8, style='italic')
-plt.show()
+#plt.figtext(0.5, 0.005, 'The range is (1, 10,000). There are select carriers with more loads.',
+            #ha='center', fontsize=8, style='italic')
+#plt.show()
 plt.close()
 
 
@@ -174,9 +163,62 @@ quartiles = [carrier_firstq, carrier_secondq, carrier_thirdq, carrier_fourthq]
 for i in quartiles:
     plt.scatter(i['CONTRACT_LINEHAUL'], i['PAID_LINEHAUL'], color='navy', alpha=0.5, s=30)
     xlim = plt.xlim()
-    plt.plot(xlim, xlim, 'r--', lw=1)
+    plt.plot(xlim, xlim, color='gold', linestyle='--', lw=1)
     plt.title('Carrier Pay Evaluation')
     plt.xlabel("Contract Benchmark Price")
     plt.ylabel("Actual Price")
-    # plt.show()
+    #plt.show()
     plt.close()
+
+
+# Duplicates issue
+"""
+ASK THEO:
+
+Merge two DataFrames
+
+load = pd.merge(load_level, service_performance, on='LOAD_ID', how='outer')
+print(load.shape)
+
+Dimensions:
+- load: 464,160 x 85
+"""
+
+load = pd.merge(load_level, service_performance, on='LOAD_ID', how='inner')
+print(f"Length of load_level: {len(load_level)}")
+print(f"Length of service_performance: {len(service_performance)}")
+print(f"Length of join table: {len(load)}")
+
+print(f'Number of duplicated load ids in the join table: {load['LOAD_ID'].duplicated().sum()}')
+print(f'Number of duplicated load ids in the load_level_shipment_record table: {load_level['LOAD_ID'].duplicated().sum()}')
+print(f'Number of duplicated load ids in the service_performance table: {service_performance['LOAD_ID'].duplicated().sum()}')
+
+
+"""
+Plot for Vraj
+Histogram of carriers' total cost / mile
+"""
+
+load_level['Cost Per Mile'] = load_level['TOTAL_PAYMENT_AMOUNT'] / load_level['MILEAGE']
+load_level['Cost Per Mile'] = load_level['Cost Per Mile'].replace([np.inf, -np.inf], np.nan)
+cpm = load_level['Cost Per Mile'].dropna()
+upper = cpm.quantile(0.90)
+
+
+
+print(load_level['TOTAL_PAYMENT_AMOUNT'].isna().sum())  # 0 missing vals
+print(load_level['MILEAGE'].isna().sum())  # 21446 missing vals
+
+print(load_level['Cost Per Mile'].isna().sum())  # 26446 missing vals
+print(len(load_level))  # 439,171 total rows
+
+
+# Histogram of aggregates
+plt.hist(cpm, bins=20, color='navy', range=(0, upper))
+plt.xlim(0, upper)
+plt.title('Distribution of Armada true per-mile rates')
+plt.suptitle("Armada's loads' cost per mile skew further to the right in comparison to DAT benchmarks.", y=0.98)
+plt.xlabel("Cost Per Mile")
+plt.ylabel("Number of Loads")
+plt.show()
+plt.close()
