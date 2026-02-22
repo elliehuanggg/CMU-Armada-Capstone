@@ -77,32 +77,39 @@ plt.close()
 
 
 """
-Assessing which carriers were waterfall options
-WHERE `AWARD_TYPE`=='WATERFALL #2',
+Assessing value of primary vs. waterfall paid by carrier
+EDITED after suggestion from Matthew
 """
 
 # Subset load_level for relevant loads
-waterfall = ['Waterfall #2']
-carrier_waterfall = load_level[load_level['AWARD_TYPE'].isin(waterfall)]
-print(carrier_waterfall['AWARD_TYPE'].head(15))
+awards_of_interest = ['Primary', 'Waterfall #2']
+carrier_reliable = load_level[load_level['AWARD_TYPE'].isin(awards_of_interest)]
 
-# Aggregate means
-carrier_wf = carrier_waterfall.groupby('CARRIER_SKEY').agg({
-    'MILEAGE': 'mean',
-    'TOTAL_PAYMENT_AMOUNT': 'mean'
-})
-print(carrier_wf)
+# Subset primary vs. waterfall #2
+primary_carrier = carrier_reliable[carrier_reliable['AWARD_TYPE'] == 'Primary']
+waterfall_carrier = carrier_reliable[carrier_reliable['AWARD_TYPE'] == 'Waterfall #2']
+
+# Aggregate means for each
+agg_primary_carrier = primary_carrier.groupby('CARRIER_SKEY', as_index=False).agg(avg_payment=('TOTAL_PAYMENT_AMOUNT', 'mean'))
+agg_waterfall_carrier = waterfall_carrier.groupby('CARRIER_SKEY', as_index=False).agg(avg_payment=('TOTAL_PAYMENT_AMOUNT', 'mean'))
+
+# Merge
+plot_df = (agg_primary_carrier.merge(agg_waterfall_carrier,
+                                     on='CARRIER_SKEY',
+                                     how='inner',
+                                     suffixes=('_primary', '_waterfall')))
 
 # Scatterplot weight x payment
-plt.scatter(carrier_wf['MILEAGE'], carrier_wf['TOTAL_PAYMENT_AMOUNT'], c='navy')
-plt.title('Waterfall #2 Load Type Performance, Aggregated by Carrier')
-plt.suptitle('Among carriers delivering waterfall award type loads, there is variation\nin the mileage and the value they take on.',
-             y=0.98)
-plt.xlabel("Average Mileage (unit)")
+plt.scatter(plot_df['avg_payment_primary'], plot_df['avg_payment_waterfall'], c='navy')
+plt.xlim(0,)
+plt.ylim(0,)
+plt.title('Primary vs. Waterfall #2 Load Value, Aggregated by Carrier')
+plt.suptitle('Among carriers delivering primary and waterfall loads, there is variation\nin the value they take on.', y=0.98)
+plt.xlabel("Average Primary Load Payment Amount ($USD)")
 plt.ylabel("Average Waterfall Load Payment Amount ($USD)")
-plt.figtext(0.5, 0.005, 'Note: Waterfall #2 award type only. One point = one carrier.',
+plt.figtext(0.5, 0.005, 'One point = one carrier. Each carrier plotted logged at least one primary and one waterfall load.',
             ha='center', fontsize=8, style='italic')
-#plt.show()
+plt.show()
 plt.close()
 
 
