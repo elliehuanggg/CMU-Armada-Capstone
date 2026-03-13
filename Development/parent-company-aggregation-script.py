@@ -1,15 +1,18 @@
 import pandas as pd
+import numpy as np
 
 """
 Read in data
 """
 
-load_level = pd.read_csv('/Users/vaibhavjha/Documents/Capstone/Data/load_level_shipment_records_chainalytics.csv')
-service_performance = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/service_performance.csv")
-lane_breadth = pd.read_excel("/Users/vaibhavjha/Documents/Capstone/Data/lane_breadth.xlsx")
-commitment_vs_take = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/commitment_vs_take.csv")
-carrier_tenure = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/carrier_tenure.csv")
-parent_ids = pd.read_csv('/Users/vaibhavjha/Documents/Capstone/Data/Carrier Parent Company.csv')
+DATA_PATH = "/Users/elliehuang/Desktop/capstone/data/"  # replace with your file path
+
+load_level = pd.read_csv(DATA_PATH + "load_level_shipment_records_chainalytics.csv")
+service_performance = pd.read_csv(DATA_PATH + "service_performance.csv")
+lane_breadth = pd.read_excel(DATA_PATH + "lane_breadth.xlsx")
+commitment_vs_take = pd.read_csv(DATA_PATH + "commitment_vs_take.csv")
+carrier_tenure = pd.read_csv(DATA_PATH + "carrier_tenure.csv")
+parent_ids = pd.read_csv(DATA_PATH + "Carrier Parent Company.csv")
 
 """
 Join files with parent_ids by CARRIER_SKEY from parent_ids
@@ -197,7 +200,6 @@ parent_agg_service_performance = parent_service_performance.groupby('PARENT_COMP
 )
 
 
-
 """
 Export parent aggregates as .csv
 """
@@ -216,3 +218,145 @@ parent_agg_service_performance.to_csv('/Users/vaibhavjha/Documents/Capstone/Data
                                      index=True,
                                      index_label="PARENT_COMPANY_ID")
 """
+
+"""
+Merge all parent-level aggregates into one dataframe
+"""
+
+parent_agg_load_level = parent_agg_load_level.reset_index()  # converts the index of a DataFrame back into a normal column
+parent_agg_commitment_vs_take = parent_agg_commitment_vs_take.reset_index()
+parent_agg_carrier_tenure = parent_agg_carrier_tenure.reset_index()
+parent_agg_service_performance = parent_agg_service_performance.reset_index()
+
+parent_features = (
+    parent_agg_load_level
+    .merge(parent_agg_commitment_vs_take, how='left', on='PARENT_COMPANY_ID')
+    .merge(parent_agg_carrier_tenure, how='left', on='PARENT_COMPANY_ID')
+    .merge(parent_agg_service_performance, how='left', on='PARENT_COMPANY_ID')
+)
+
+"""
+Create parent-level engineered features by cohort
+"""
+
+# Consistency
+parent_features['Consistency_1'] = (
+    parent_features['ON_TIME_PICK_YES_COUNT'] / parent_features['TOTAL_LOADS']
+)
+
+parent_features['Consistency_2'] = (
+    parent_features['ON_TIME_DROP_YES_COUNT'] / parent_features['TOTAL_LOADS']
+)
+
+parent_features['Consistency_3'] = (
+    parent_features['AWARD_TYPE_WATERFALL_COUNT'] /
+    (parent_features['AWARD_TYPE_PRIMARY_COUNT'] + parent_features['AWARD_TYPE_WATERFALL_COUNT'])
+)
+
+parent_features['Consistency_4'] = (
+    (parent_features['ACTUAL_QUANTITY_TOTAL'] - parent_features['QUANTITY_TOTAL']) /
+    parent_features['QUANTITY_TOTAL']
+)
+
+parent_features['Consistency_5'] = (
+    parent_features['TRANSIT_TIME_STANDARD_TRUE_COUNT'] / parent_features['TOTAL_LOADS']
+)
+
+parent_features['Consistency_6'] = (
+    (parent_features['DUE_DIFF_TOTAL'] - parent_features['ACTUAL_DIFF_TOTAL']) /
+    parent_features['TOTAL_LOADS']
+)
+
+parent_features['Consistency_7'] = (
+    (parent_features['TOTAL_LOADS'] - parent_features['CLAIM_TYPE_CD_COUNT']) /
+    parent_features['TOTAL_LOADS']
+)
+
+# Volatility
+parent_features['Volatility_1'] = (
+    parent_features['AWARD_TYPE_SPOT_COUNT'] / parent_features['TOTAL_LOADS']
+)
+
+parent_features['Volatility_2'] = (
+    125 - parent_features['PARENT_TENURE_YEARS']
+)
+
+# Adaptability
+parent_features['Adaptability_1'] = (
+    (parent_features['TEMPERATURE_REQ_DRY_COUNT'] * parent_features['TEMPERATURE_REQ_SENSITIVE_COUNT']) /
+    (parent_features['TOTAL_LOADS'] ** 2)
+)
+
+parent_features['Adaptability_2'] = (
+    parent_features['ACTUAL_QUANTITY_MEAN'] / parent_features['ACTUAL_QUANTITY_STD']
+)
+
+parent_features['Adaptability_3'] = (
+    (parent_features['AWARD_TYPE_PRIMARY_COUNT'] * parent_features['AWARD_TYPE_WATERFALL_COUNT']) /
+    (parent_features['TOTAL_LOADS'] ** 2)
+)
+
+parent_features['Adaptability_4'] = (
+    parent_features['PAID_LINEHAUL_MEAN'] / parent_features['PAID_LINEHAUL_STD']
+)
+
+parent_features['Adaptability_5'] = (
+    parent_features['MILEAGE_MEAN'] / parent_features['MILEAGE_STD']
+)
+
+# Service Capacity
+parent_features['ServiceCapacity_1'] = (
+    parent_features['ACTUAL_QUANTITY_TOTAL']
+)
+
+parent_features['ServiceCapacity_2'] = (
+    parent_features['MILEAGE_TOTAL']
+)
+
+parent_features['ServiceCapacity_3'] = (
+    parent_features['PAID_LINEHAUL_TOTAL']
+)
+
+parent_features['ServiceCapacity_4'] = (
+    parent_features['TOTAL_LOADS'] / parent_features['TOTAL_LOADS'].sum()
+)
+
+"""
+Replace inf values from division-by-zero with NaN
+"""
+
+parent_features = parent_features.replace([np.inf, -np.inf], np.nan)
+
+"""
+Standardize engineered feature columns
+Append new standardized columns to parent_features
+"""
+
+feature_cols_to_standardize = [
+    'Consistency_1',
+    'Consistency_2',
+    'Consistency_3',
+    'Consistency_4',
+    'Consistency_5',
+    'Consistency_6',
+    'Consistency_7',
+    'Volatility_1',
+    'Volatility_2',
+    'Adaptability_1',
+    'Adaptability_2',
+    'Adaptability_3',
+    'Adaptability_4',
+    'Adaptability_5',
+    'ServiceCapacity_1',
+    'ServiceCapacity_2',
+    'ServiceCapacity_3',
+    'ServiceCapacity_4'
+]
+
+for col in feature_cols_to_standardize:
+    col_mean = parent_features[col].mean()
+    col_std = parent_features[col].std()
+
+    parent_features[col + '_STD'] = (
+        (parent_features[col] - col_mean) / col_std
+    )
