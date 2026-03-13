@@ -37,6 +37,7 @@ parent_load_level['PICK_DUE_DATE'] = pd.to_datetime(
     parent_load_level['PICK_DUE_DATE'], errors='coerce'
 )
 
+
 """
 Aggregate parent_load_level data at parent carrier level (PARENT_COMPANY_ID)
 
@@ -130,7 +131,12 @@ parent_agg_load_level = parent_load_level.groupby('PARENT_COMPANY_ID').agg(
         'size'
     )
 )
+
+# Filter for total loads > 50
+parent_agg_load_level = parent_agg_load_level[parent_agg_load_level['TOTAL_LOADS'] >= 50]
+
 print(parent_agg_load_level)
+
 
 """
 Aggregate parent_commitment_vs_take data at parent carrier level (PARENT_COMPANY_ID)
@@ -142,22 +148,60 @@ Features of interest:
 parent_agg_commitment_vs_take = parent_commitment_vs_take.groupby('PARENT_COMPANY_ID').agg(
     ACTUAL_QUANTITY_TOTAL=(
         'ACTUAL_QUANTITY',
-        lambda x: round(x.sum(), 2)
+        lambda x: x[x != 0].sum()  # not including rows where ACTUAL_QUANTITY == 0 in total
     ),
     ACTUAL_QUANTITY_MEAN=(
         'ACTUAL_QUANTITY',
-        lambda x: round(x.mean(), 2)
+        lambda x: round(x[x != 0].mean(), 2)  # not including rows where ACTUAL_QUANTITY == 0 in mean
     ),
     ACTUAL_QUANTITY_STD=(
         'ACTUAL_QUANTITY',
-        lambda x: round(x.std(), 2)
+        lambda x: round(x[x != 0].std(), 2)  # not including rows where ACTUAL_QUANTITY == 0 in std
+    ),
+    TOTAL_LANES=(
+        'ACTUAL_QUANTITY',  # could be any column
+        'size'
+    )
+)
+print(parent_agg_commitment_vs_take)
+
+
+"""
+Aggregate parent_carrier_tenure data at parent carrier level (PARENT_COMPANY_ID)
+
+Features of interest:
+
+- TENURE_YEARS | carrier_tenure
+"""
+
+parent_agg_carrier_tenure = parent_carrier_tenure.groupby('PARENT_COMPANY_ID').agg(
+    PARENT_TENURE_YEARS=(
+        'TENURE_YEARS',
+        lambda x: round(x.mean(), 2)
     )
 )
 
-print(parent_agg_commitment_vs_take)
+
+"""
+Aggregate parent_service_performance data at parent carrier level (PARENT_COMPANY_ID)
+
+Features of interest:
+
+- CLAIM_TYPE_CD | service_performance
+"""
+parent_agg_service_performance = parent_service_performance.groupby('PARENT_COMPANY_ID').agg(
+    CLAIM_TYPE_CD_COUNT=(
+        'CLAIM_TYPE_CD',
+        lambda x: (x != '').sum()
+    )
+)
+
+
 
 """
 Export parent aggregates as .csv
+"""
+
 """
 parent_agg_load_level.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_load_level_shipment_record_chainalytics.csv',
                              index=True,
@@ -165,3 +209,10 @@ parent_agg_load_level.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_a
 parent_agg_commitment_vs_take.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_commitment_vs_take.csv',
                                      index=True,
                                      index_label="PARENT_COMPANY_ID")
+parent_agg_carrier_tenure.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_carrier_tenure.csv',
+                                     index=True,
+                                     index_label="PARENT_COMPANY_ID")
+parent_agg_service_performance.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_service_performance.csv',
+                                     index=True,
+                                     index_label="PARENT_COMPANY_ID")
+"""
