@@ -5,7 +5,7 @@ import numpy as np
 Read in data
 """
 
-DATA_PATH = "/Users/elliehuang/Desktop/capstone/data/"  # Replace with your file path
+DATA_PATH = "/Users/vaibhavjha/Documents/Capstone/Data/"  # Replace with your file path
 
 load_level = pd.read_csv(DATA_PATH + "load_level_shipment_records_chainalytics.csv")
 service_performance = pd.read_csv(DATA_PATH + "service_performance.csv")
@@ -41,6 +41,27 @@ parent_load_level['PICK_DUE_DATE'] = pd.to_datetime(
     parent_load_level['PICK_DUE_DATE'], errors='coerce'
 )
 
+"""
+Get contract loads for metric calculation (for later)
+"""
+contract_loads = parent_load_level[parent_load_level['AWARD_TYPE'].isin([
+    'Primary',
+    'Waterfall #2',
+    'Waterfall #3',
+    'Waterfall #4',
+    'Waterfall #5',
+    'Waterfall #6'
+])]
+
+contract_agg = contract_loads.groupby('PARENT_COMPANY_ID').agg(
+    NAP_LINEHAUL_CONTRACT_TOTAL=('NAP_LINEHAUL', 'sum'),
+    PAID_LINEHAUL_CONTRACT_TOTAL=('PAID_LINEHAUL', 'sum'),
+    CONTRACT_LINEHAUL_25_TOTAL=('CONTRACT_LINEHAUL_25', 'sum'),
+    CONTRACT_LINEHAUL_50_TOTAL=('CONTRACT_LINEHAUL_50', 'sum'),
+    CONTRACT_LINEHAUL_75_TOTAL=('CONTRACT_LINEHAUL_75', 'sum'),
+).reset_index()
+
+contract_agg = contract_agg.round(2)
 """
 Compute month-over-month percent change in FTR spot rate (for Volatility_2)
 """
@@ -201,7 +222,18 @@ parent_agg_load_level = parent_load_level.groupby('PARENT_COMPANY_ID').agg(
     )
 )
 
-# Filter for total loads > 50
+"""
+Merge contract-specific variables with main
+"""
+parent_agg_load_level = parent_agg_load_level.merge(
+    contract_agg,
+    on='PARENT_COMPANY_ID',
+    how='left'
+)
+
+"""
+Filter for total loads > 50
+"""
 parent_agg_load_level = parent_agg_load_level[parent_agg_load_level['TOTAL_LOADS'] >= 50]
 
 print(parent_agg_load_level)
@@ -259,31 +291,12 @@ Features of interest:
 - CLAIM_TYPE_CD | service_performance
 """
 parent_agg_service_performance = parent_service_performance.groupby('PARENT_COMPANY_ID').agg(
-    CLAIM_TYPE_CD_COUNT=(
+    CLAIM_TYPE_CD_FALSE_COUNT=(
         'CLAIM_TYPE_CD',
-        lambda x: (x != '').sum()
+        lambda x: (x == '').sum()
     )
 )
 
-
-"""
-Export parent aggregates as .csv
-"""
-
-"""
-parent_agg_load_level.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_load_level_shipment_record_chainalytics.csv',
-                             index=True,
-                             index_label="PARENT_COMPANY_ID")
-parent_agg_commitment_vs_take.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_commitment_vs_take.csv',
-                                     index=True,
-                                     index_label="PARENT_COMPANY_ID")
-parent_agg_carrier_tenure.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_carrier_tenure.csv',
-                                     index=True,
-                                     index_label="PARENT_COMPANY_ID")
-parent_agg_service_performance.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_agg_service_performance.csv',
-                                     index=True,
-                                     index_label="PARENT_COMPANY_ID")
-"""
 
 """
 Merge all parent-level aggregates into one dataframe
@@ -294,12 +307,23 @@ parent_agg_commitment_vs_take = parent_agg_commitment_vs_take.reset_index()
 parent_agg_carrier_tenure = parent_agg_carrier_tenure.reset_index()
 parent_agg_service_performance = parent_agg_service_performance.reset_index()
 
-parent_features = (
+parent_raw_features = (
     parent_agg_load_level
     .merge(parent_agg_commitment_vs_take, how='left', on='PARENT_COMPANY_ID')
     .merge(parent_agg_carrier_tenure, how='left', on='PARENT_COMPANY_ID')
     .merge(parent_agg_service_performance, how='left', on='PARENT_COMPANY_ID')
 )
+
+
+print(parent_raw_features)
+parent_raw_features.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_raw_features.csv',
+                           index=False)
+
+
+"""
+Part 2: Feature Engineering
+"""
+
 
 """
 Create parent-level engineered features by cohort
