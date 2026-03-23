@@ -5,7 +5,7 @@ import numpy as np
 Read in data
 """
 
-DATA_PATH = "/Users/vaibhavjha/Documents/Capstone/Data/"  # Replace with your file path
+DATA_PATH = "/Users/elliehuang/Desktop/capstone/data/"  # Replace with your file path
 
 load_level = pd.read_csv(DATA_PATH + "load_level_shipment_records_chainalytics.csv")
 service_performance = pd.read_csv(DATA_PATH + "service_performance.csv")
@@ -293,7 +293,7 @@ Features of interest:
 parent_agg_service_performance = parent_service_performance.groupby('PARENT_COMPANY_ID').agg(
     CLAIM_TYPE_CD_FALSE_COUNT=(
         'CLAIM_TYPE_CD',
-        lambda x: (x == '').sum()
+        lambda x: x.isna().sum()
     )
 )
 
@@ -316,142 +316,7 @@ parent_raw_features = (
 
 
 print(parent_raw_features)
-parent_raw_features.to_csv('/Users/vaibhavjha/Documents/Capstone/Data/parent_raw_features.csv',
+parent_raw_features.to_csv(DATA_PATH + "parent_raw_features.csv",
                            index=False)
-
-
-"""
-Part 2: Feature Engineering
-"""
-
-
-"""
-Create parent-level engineered features by cohort
-"""
-
-# Consistency
-parent_features['Consistency_1'] = (
-    parent_features['ACTUAL_QUANTITY_TOTAL'] / parent_features['QUANTITY_TOTAL']
-)
-
-parent_features['Consistency_2'] = (
-    (parent_features['TOTAL_LOADS'] - parent_features['CLAIM_TYPE_CD_COUNT']) /
-    parent_features['TOTAL_LOADS']
-)
-
-parent_features['Consistency_3'] = (
-    parent_features['ON_TIME_PICK_YES_COUNT'] / parent_features['TOTAL_LOADS']
-)
-
-parent_features['Consistency_4'] = (
-    parent_features['ON_TIME_DROP_YES_COUNT'] / parent_features['TOTAL_LOADS']
-)
-
-parent_features['Consistency_5'] = (
-    parent_features['TRANSIT_TIME_STANDARD_TRUE_COUNT'] / parent_features['TOTAL_LOADS']
-)
-
-parent_features['Consistency_6'] = (
-    parent_features['AWARD_TYPE_WATERFALL_COUNT'] /
-    (parent_features['AWARD_TYPE_PRIMARY_COUNT'] + parent_features['AWARD_TYPE_WATERFALL_COUNT'])
-)
-
-parent_features['Consistency_7'] = (
-    (parent_features['DUE_DIFF_TOTAL'] - parent_features['ACTUAL_DIFF_TOTAL']) /
-    parent_features['TOTAL_LOADS']
-)
-
-# Volatility
-parent_features['Volatility_1'] = (
-    (parent_features['AWARD_TYPE_SPOT_COUNT'] / parent_features['TOTAL_LOADS']) *
-    (parent_features['ACTUAL_QUANTITY_TOTAL'] / parent_features['QUANTITY_TOTAL'])
-)
-
-parent_features['Volatility_2'] = parent_features['PARENT_COMPANY_ID'].map(
-    volatility_2_df.set_index('PARENT_COMPANY_ID')['Volatility_2']
-)
-
-parent_features['Volatility_3'] = (
-    125 - parent_features['PARENT_TENURE_YEARS']
-)
-
-# Adaptability
-parent_features['Adaptability_1'] = (
-    (parent_features['TEMPERATURE_REQ_DRY_COUNT'] * parent_features['TEMPERATURE_REQ_SENSITIVE_COUNT']) /
-    (parent_features['TOTAL_LOADS'] ** 2)
-)
-
-parent_features['Adaptability_2'] = (
-    parent_features['MILEAGE_MEAN'] / parent_features['MILEAGE_STD']
-)
-
-parent_features['Adaptability_3'] = (
-    parent_features['ACTUAL_QUANTITY_MEAN'] / parent_features['ACTUAL_QUANTITY_STD']
-)
-
-parent_features['Adaptability_4'] = (
-    (parent_features['AWARD_TYPE_PRIMARY_COUNT'] * parent_features['AWARD_TYPE_WATERFALL_COUNT']) /
-    (parent_features['TOTAL_LOADS'] ** 2)
-)
-
-parent_features['Adaptability_5'] = (
-    parent_features['PAID_LINEHAUL_MEAN'] / parent_features['PAID_LINEHAUL_STD']
-)
-
-# Service Capacity
-parent_features['ServiceCapacity_1'] = (
-    parent_features['ACTUAL_QUANTITY_TOTAL']
-)
-
-parent_features['ServiceCapacity_2'] = (
-    parent_features['TOTAL_LOADS'] / parent_features['TOTAL_LOADS'].sum()
-)
-
-parent_features['ServiceCapacity_3'] = (
-    parent_features['MILEAGE_TOTAL']
-)
-
-parent_features['ServiceCapacity_4'] = (
-    parent_features['PAID_LINEHAUL_TOTAL']
-)
-
-"""
-Replace inf values from division-by-zero with NaN
-"""
-
-parent_features = parent_features.replace([np.inf, -np.inf], np.nan)
-
-"""
-Standardize engineered feature columns
-Append new standardized columns to parent_features
-"""
-
-feature_cols_to_standardize = [
-    'Consistency_1',
-    'Consistency_2',
-    'Consistency_3',
-    'Consistency_4',
-    'Consistency_5',
-    'Consistency_6',
-    'Consistency_7',
-    'Volatility_1',
-    'Volatility_2',
-    'Volatility_3',
-    'Adaptability_1',
-    'Adaptability_2',
-    'Adaptability_3',
-    'Adaptability_4',
-    'Adaptability_5',
-    'ServiceCapacity_1',
-    'ServiceCapacity_2',
-    'ServiceCapacity_3',
-    'ServiceCapacity_4'
-]
-
-for col in feature_cols_to_standardize:
-    col_mean = parent_features[col].mean()
-    col_std = parent_features[col].std()
-
-    parent_features[col + '_STD'] = (
-        (parent_features[col] - col_mean) / col_std
-    )
+volatility_2_df.to_csv(DATA_PATH + "volatility_2.csv",
+                       index=False)
