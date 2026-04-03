@@ -13,7 +13,7 @@ from factor_analyzer.factor_analyzer import calculate_bartlett_sphericity
 Read in data: parent_features_engineered.csv
 """
 
-df = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/parent_features_engineered.csv")
+df = pd.read_csv("/Users/elliehuang/Desktop/capstone/data/parent_features_engineered.csv")
 features = df.iloc[:, 31:52]
 
 
@@ -52,9 +52,6 @@ fa = FactorAnalyzer(n_factors=n_factors, rotation='oblimin')  # maybe consider v
 fa.fit(clean_features)
 
 
-"""
-Choose number of factors
-"""
 # Kaiser criterion
 ev, cf = fa.get_eigenvalues()
 print(ev)
@@ -62,18 +59,37 @@ print(ev)
 # Proportion of variance by factor
 variance, prop_var, cumulative_var = fa.get_factor_variance()
 
+x = np.arange(1, len(ev) + 1)
 
 # Scree plot
-plt.plot(range(1, len(ev) + 1), ev, marker='o')
-plt.axhline(y=1, color='r', linestyle='--', label='Kaiser criterion')
+plt.figure(figsize=(10, 6))
+
+# First 7 factors highlighted
+plt.plot(x[:8], ev[:8], marker='o', linewidth=2)
+
+# Remaining factors faded
+plt.plot(x[7:], ev[7:], marker='o', linewidth=2, color='0.65')
+
+# Kaiser threshold
+plt.axhline(y=1, color='r', linestyle='--', linewidth=1.8)
+
+# Vertical cutoff at factor 7
+# plt.axvline(x=7, color='royalblue', linestyle=':', linewidth=2)
+
 plt.xlabel('Factor Number')
 plt.ylabel('Eigenvalue')
 plt.title('Scree Plot - Oblique Rotation')
-plt.suptitle('Seven factors explain more variance than a single variable would.',
-             y=0.98, fontsize=14)
-plt.legend()
-#plt.show()
-plt.close()
+
+plt.text(10.5, 1.05, 'Kaiser criterion', color='r', fontsize=11)
+
+# Clean up extra ink
+ax = plt.gca()
+plt.xticks([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21])
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
+plt.tight_layout()
+plt.show()
 
 """
 Visualization: cumulative proportion of variance explained with each added factor
