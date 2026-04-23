@@ -234,10 +234,11 @@ parent_agg_load_level = parent_agg_load_level.merge(
 """
 Filter for total loads > 50
 """
+num_carriers_removed = len(parent_agg_load_level[parent_agg_load_level["TOTAL_LOADS"] < 50])
+print("Carriers with TOTAL_LOADS < 50:", num_carriers_removed)
+
 parent_agg_load_level = parent_agg_load_level[parent_agg_load_level['TOTAL_LOADS'] >= 50]
-
 print(parent_agg_load_level)
-
 
 """
 Aggregate parent_commitment_vs_take data at parent carrier level (PARENT_COMPANY_ID)

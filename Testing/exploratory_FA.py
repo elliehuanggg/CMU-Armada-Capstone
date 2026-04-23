@@ -68,7 +68,7 @@ plt.axhline(y=1, color='r', linestyle='--', linewidth=1.8)
 
 plt.xlabel('Factor Number', fontsize=16)
 plt.ylabel('Eigenvalue', fontsize=16)
-plt.title('Scree Plot - Oblique Rotation', fontsize=18)
+plt.title('Scree Plot', fontsize=18)
 
 plt.text(10.5, 1.05, 'Kaiser criterion', color='r', fontsize=12)
 
@@ -107,10 +107,10 @@ plt.figure(figsize=(10, 8))
 ax = sns.heatmap(loadings, annot=True, fmt='.2f',
                  cmap='coolwarm', center=0, vmin=-1, vmax=1, annot_kws={"size": 14})
 plt.xlabel('Factors', fontsize=12)
-plt.ylabel('Raw Features', fontsize=12)
-plt.title('Factor Loadings - Oblique Rotation', fontsize=12)
-plt.suptitle('The factor loadings for the first seven factors align with the behavioral cohorts we developed.',
-             y=0.98, fontsize=14)
+plt.ylabel('Engineered Features', fontsize=12)
+# plt.title('Factor Loadings - Oblique Rotation', fontsize=12)
+# plt.suptitle('The factor loadings for the first seven factors align with the behavioral cohorts we developed.',
+             # y=0.98, fontsize=14)
 plt.tight_layout()
-# plt.show()
+plt.show()
 plt.close()
