@@ -16,6 +16,7 @@ Read in data: parent_features_engineered.csv
 df = pd.read_csv("/Users/elliehuang/Desktop/capstone/data/parent_features_engineered.csv")
 features = df.iloc[:, 31:52]
 
+
 """
 Determine whether data are suitable for factor analysis
 """
@@ -82,6 +83,7 @@ ax.spines['right'].set_visible(False)
 plt.tight_layout()
 # plt.show()
 plt.close()
+
 
 """
 Visualization: cumulative proportion of variance explained with each added factor

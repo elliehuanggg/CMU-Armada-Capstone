@@ -115,11 +115,13 @@ parent_features['Economical_2'] = (
     (parent_features['CONTRACT_LINEHAUL_75_TOTAL'] - parent_features['CONTRACT_LINEHAUL_25_TOTAL'])
 )
 
+
 """
 Replace inf values from division-by-zero with NaN
 """
 
 parent_features = parent_features.replace([np.inf, -np.inf], np.nan)
+
 
 """
 Standardize engineered feature columns

@@ -15,6 +15,7 @@ carrier_tenure = pd.read_csv(DATA_PATH + "carrier_tenure.csv")
 ftr_index_data = pd.read_csv(DATA_PATH + "ftr_index_data.csv")
 parent_ids = pd.read_csv(DATA_PATH + "Carrier Parent Company.csv")
 
+
 """
 Join files with parent_ids by CARRIER_SKEY from parent_ids
 """
@@ -24,6 +25,7 @@ parent_service_performance = service_performance.merge(parent_ids, how='inner', 
 parent_lane_breadth = lane_breadth.merge(parent_ids, how='inner', on='CARRIER_SKEY')
 parent_commitment_vs_take = commitment_vs_take.merge(parent_ids, how='inner', on='CARRIER_SKEY')
 parent_carrier_tenure = carrier_tenure.merge(parent_ids, how='inner', on='CARRIER_SKEY')
+
 
 """
 Make date columns DATETIME type, not string (for later)
@@ -40,6 +42,7 @@ parent_load_level['DROP_DUE_DATE'] = pd.to_datetime(
 parent_load_level['PICK_DUE_DATE'] = pd.to_datetime(
     parent_load_level['PICK_DUE_DATE'], errors='coerce'
 )
+
 
 """
 Get contract loads for metric calculation (for later)
@@ -62,6 +65,8 @@ contract_agg = contract_loads.groupby('PARENT_COMPANY_ID').agg(
 ).reset_index()
 
 contract_agg = contract_agg.round(2)
+
+
 """
 Compute month-over-month percent change in FTR spot rate (for Volatility_2)
 """
@@ -127,6 +132,7 @@ volatility_2_df = (
     .reset_index()
     .rename(columns={'VOL2_MONTHLY': 'Volatility_2'})
 )
+
 
 """
 Aggregate parent_load_level data at parent carrier level (PARENT_COMPANY_ID)
@@ -222,6 +228,7 @@ parent_agg_load_level = parent_load_level.groupby('PARENT_COMPANY_ID').agg(
     )
 )
 
+
 """
 Merge contract-specific variables with main
 """
@@ -231,6 +238,7 @@ parent_agg_load_level = parent_agg_load_level.merge(
     how='left'
 )
 
+
 """
 Filter for total loads > 50
 """
@@ -239,6 +247,7 @@ print("Carriers with TOTAL_LOADS < 50:", num_carriers_removed)
 
 parent_agg_load_level = parent_agg_load_level[parent_agg_load_level['TOTAL_LOADS'] >= 50]
 print(parent_agg_load_level)
+
 
 """
 Aggregate parent_commitment_vs_take data at parent carrier level (PARENT_COMPANY_ID)
