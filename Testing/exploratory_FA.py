@@ -13,7 +13,7 @@ from factor_analyzer.factor_analyzer import calculate_bartlett_sphericity
 Read in data: parent_features_engineered.csv
 """
 
-df = pd.read_csv("/Users/elliehuang/Desktop/capstone/data/parent_features_engineered.csv")
+df = pd.read_csv("parent_features_engineered.csv")  # May have to specify file path
 features = df.iloc[:, 31:52]
 
 

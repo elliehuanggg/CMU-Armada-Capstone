@@ -7,7 +7,7 @@ import semopy
 """
 Read in data: parent_features_engineered.csv
 """
-df = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/parent_features_engineered.csv")
+df = pd.read_csv("parent_features_engineered.csv")  # May have to specify file path
 features = df.iloc[:, 52:]
 
 clean_features = features.dropna()

@@ -9,7 +9,7 @@ Part 2: Feature Engineering
 Read in data
 """
 
-DATA_PATH = "/Users/elliehuang/Desktop/capstone/data/"  # Replace with your file path
+DATA_PATH = ""  # Replace with your file path
 
 parent_features = pd.read_csv(DATA_PATH + "parent_raw_features.csv")
 volatility_2_df = pd.read_csv(DATA_PATH + "volatility_2.csv")

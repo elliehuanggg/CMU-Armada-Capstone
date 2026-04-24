@@ -6,9 +6,9 @@ import seaborn as sns
 """
 Read in data
 """
-load_level = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/load_level_shipment_records.csv")
-service_performance = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/service_performance.csv")
-parent_ids = pd.read_csv("/Users/vaibhavjha/Documents/Capstone/Data/parent_carrier_company_ids(in).csv")
+load_level = pd.read_csv("load_level_shipment_records.csv")  # May have to specify file path
+service_performance = pd.read_csv("service_performance.csv")
+parent_ids = pd.read_csv("parent_carrier_company_ids(in).csv")
 
 # Loop through DataFrames
 data = [load_level, service_performance, parent_ids]

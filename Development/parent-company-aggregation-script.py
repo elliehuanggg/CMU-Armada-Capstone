@@ -5,7 +5,7 @@ import numpy as np
 Read in data
 """
 
-DATA_PATH = "/Users/elliehuang/Desktop/capstone/data/"  # Replace with your file path
+DATA_PATH = ""  # Replace with your file path
 
 load_level = pd.read_csv(DATA_PATH + "load_level_shipment_records_chainalytics.csv")
 service_performance = pd.read_csv(DATA_PATH + "service_performance.csv")
